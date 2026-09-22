@@ -1,0 +1,12 @@
+import { z } from 'zod';
+export const parameterSchema=z.object({value:z.number().finite(),min:z.number().finite().nullable(),max:z.number().finite().nullable(),fixed:z.boolean()});
+export const fitSchema=z.object({enabled:z.boolean(),model:z.enum(['linear','origin','polynomial','exponential','power','logarithmic']),degree:z.number().int().min(1).max(6),mode:z.enum(['auto','manual']),weighting:z.enum(['ordinary','absolute','relative']),sigmaColumn:z.string(),rangeMin:z.number().finite().nullable(),rangeMax:z.number().finite().nullable(),parameters:z.array(parameterSchema).max(7)});
+export type FitConfig=z.infer<typeof fitSchema>;
+export const models={linear:'a·x + b',origin:'a·x',polynomial:'Σ aᵢ·xⁱ',exponential:'a·exp(b·x) + c',power:'a·xᵇ',logarithmic:'a·ln(x) + b'};
+export function parameterNames(model:FitConfig['model'],degree=2):string[]{return model==='polynomial'?Array.from({length:degree+1},(_,i)=>'a'+i):model==='origin'?['a']:model==='exponential'?['a','b','c']:['a','b'];}
+export function defaultFit():FitConfig{return {enabled:false,model:'linear',degree:2,mode:'auto',weighting:'ordinary',sigmaColumn:'',rangeMin:null,rangeMax:null,parameters:[{value:1,min:null,max:null,fixed:false},{value:0,min:null,max:null,fixed:false}]};}
+export const propagationSchema=z.object({expression:z.string().max(400),unit:z.string(),k:z.number().finite().positive(),digits:z.union([z.literal(1),z.literal(2)]),variables:z.array(z.object({id:z.string(),symbol:z.string(),source:z.string(),value:z.number().finite(),uncertainty:z.number().finite().nonnegative()})).max(16),correlations:z.record(z.number().finite().min(-1).max(1))});
+export type PropagationConfig=z.infer<typeof propagationSchema>;
+export function defaultPropagation():PropagationConfig{return {expression:'x',unit:'',k:2,digits:1,variables:[{id:crypto.randomUUID(),symbol:'x',source:'manual',value:1,uncertainty:0.01}],correlations:{}};}
+export interface FitResult {names:string[];parameters:number[];standard_errors:number[]|null;covariance:number[][]|null;curve:number[][];residuals:{id:string;x:number;residual:number}[];rmse:number;r2:number|null;n:number;manual:boolean;warning:string|null}
+export interface PropagationResult {value:number;uncertainty:number;relative:number|null;expanded:number;budget:{symbol:string;derivative:string;sensitivity:number;uncertainty:number;contribution:number}[];cross:{left:string;right:string;correlation:number;contribution:number}[]}
