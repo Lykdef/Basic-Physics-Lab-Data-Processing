@@ -1,19 +1,18 @@
 {
   "name": "physical-lab",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
-  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1",
-    "desktop": "npm run build && electron .",
+    "desktop": "npm run build && node scripts/webview.mjs",
     "test": "tsx --test tests/*.test.ts",
     "test:ui": "playwright test",
-    "test:desktop": "node tests/desktop.mjs",
+    "test:desktop": "node scripts/webview.mjs test",
     "setup:compute": "python -m pip install --target .python-deps -r compute/requirements.txt",
-    "package:windows": "npm run build && node scripts/package-windows.mjs"
+    "package:windows": "npm run build && node scripts/webview.mjs package"
   },
   "dependencies": {
     "jstat": "^1.9.6",
@@ -25,7 +24,6 @@
     "@playwright/test": "^1.56.0",
     "@types/node": "^24.0.0",
     "@vitejs/plugin-vue": "^6.0.0",
-    "electron": "^41.0.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0",
     "vite": "^7.0.0",

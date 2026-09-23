@@ -1,22 +1,25 @@
 # 物理实验室 · Physical Lab
 
-面向大学物理实验的数据工作台。采用 Electron + Vue 3 + TypeScript，已实现数据管理、统计评定、实时拟合与一阶不确定度传播，安装依赖后可离线使用。
+面向大学物理实验的数据工作台。采用 pywebview（Edge WebView2）+ Vue 3 + TypeScript，已实现数据管理、统计评定、实时拟合与一阶不确定度传播，安装依赖后可离线使用。
 
 ## 直接运行（Windows x64）
 
-下载 `PhysicalLab-0.1.0-win-x64.zip`，完整解压，双击 `PhysicalLab.exe`。便携版内置 Electron、Python 3.14.7、NumPy、SciPy、SymPy，无需额外安装环境。不要单独移动 exe，需保留整个目录。
+完整解压 `PhysicalLab-WebView-0.2.0-win-x64.zip`，双击 `PhysicalLab.exe`。该版本内置 Python 与科学计算依赖，不需要 Node.js 或另装 Python；需要系统具备 Microsoft Edge WebView2 Runtime。Windows 10/11 通常已有该组件；缺失时可从 [微软官方下载页](https://developer.microsoft.com/microsoft-edge/webview2/) 安装。
+
+请保留整个解压目录。项目自动保存在 `%LOCALAPPDATA%\PhysicalLab\workspace.json`，浏览器缓存单独保存，不依赖本地服务端口。其他版本或浏览器项目请先导出 JSON，再在桌面版导入。
 
 ## 源码启动
 
-需要 Node.js 22.12+（或 24+）及 Python 3.12+（须加入 PATH）。在本目录运行：
+前端开发需要 Node.js 22.12+；桌面 Python 建议 3.12 x64。
 
 ```sh
-npm install
-npm run setup:compute
+npm ci
+py -3.12 -m venv .venv-webview
+.venv-webview\Scripts\python.exe -m pip install -r desktop/requirements.txt
 npm run desktop
 ```
 
-桌面程序提供系统文件对话框与临时文件替换保存。开发前端：`npm run dev`，访问 http://127.0.0.1:5173 。浏览器版本通过下载/上传 JSON 保存、打开项目。
+双击 `启动物理实验室.cmd` 等价于默认桌面启动。`npm run dev` 仍可用于浏览器前端开发；浏览器计算接口使用 `compute/bridge.cjs`，优先复用 `.venv-webview` 环境；也可通过 `PHYSICAL_LAB_PYTHON` 指定其他 Python。
 
 ## 已实现
 
@@ -25,7 +28,7 @@ npm run desktop
 - Excel 多行多列粘贴，空值为 null，拒绝非法数字，稳定行编号。
 - 数据一键排除与恢复；不保存操作历史，保留 80 步会话内撤销重做。
 - 五个明确标注的教学模拟示例。
-- 完整项目 JSON 导入导出与格式版本校验；浏览器 / Electron 本机存储自动恢复。
+- 完整项目 JSON 导入导出与格式版本校验；浏览器与桌面本机存储自动恢复。
 - 仪器信息、按变量保存的误差限 δ、分布假设、B 类标准不确定度与备注；原始数据图形预览。
 - 统计页展示原始数据表与最佳估计值 x̄ ± u；不确定度默认只进不舍保留一位有效数字，可选两位；均值对齐末位并四舍六入五凑偶，仅用于显示。
 - 三栏响应式界面，键盘保存快捷键。
@@ -36,7 +39,7 @@ npm run desktop
 
 暂未实现多来源 B 类合成、偏差修正、蒙特卡洛传播或图像导出。误差限 δ 按变量保存；均匀分布 u_B=δ/√3，三角分布 δ/√6，正态 3σ 为 δ/3，正态 2σ 为 δ/2。旧量程/分辨力仅保留存档，不自动用于计算。修改单位标签不会换算数值。图形支持实时拟合；暂未显示误差棒。统计结果在读取、修改时重算；G、样本标准差等中间量显示 7 位有效数字，A/B 分量显示未修约浮点值，仅最终合成不确定度和报告值按所选规则修约。修约使用十进制整数算法处理临界位数，不影响内部计算与原始数据。
 
-本机自动恢复依赖当前浏览器来源 / 桌面应用存储，建议另存 JSON 作为可移植备份。重新导入同 ID 项目创建副本，避免覆盖。撤销栈不跨项目切换或重启保存。已提供 Windows x64 便携包；源码运行时计算进程通过本机 Python 启动，依赖安装到项目的 .python-deps 目录。
+本机自动恢复依赖当前浏览器来源 / 桌面应用存储，建议另存 JSON 作为可移植备份。重新导入同 ID 项目创建副本，避免覆盖。撤销栈不跨项目切换或重启保存。已提供 Windows x64 pywebview 便携包；源码桌面运行使用 .venv-webview 环境，浏览器开发接口可复用同一 Python 环境。
 
 ## 验证
 
@@ -58,9 +61,10 @@ npm run test:desktop
 - `src/statistics.ts` / `src/StatisticsPanel.vue`：离线统计计算与评定界面，使用内置 Grubbs 临界值表。
 - `src/App.vue`：工作台、项目操作、设置与本机恢复。
 - `src/style.css`：暖白与深青色视觉规范及响应式布局。
-- `electron/`：启用 contextIsolation / sandbox、关闭 Node integration，仅开放项目文件与受限计算桥接。
+- `desktop/`：pywebview 窗口、受限桌面接口、独立计算进程和原子文件保存。
+- `src/desktop.ts`：等待桥接就绪并接入稳定的本机工作区存储。
 
-Electron 桥接依据官方文档：https://www.electronjs.org/docs/latest/tutorial/context-isolation
+pywebview 桥接依据官方文档：https://pywebview.flowrl.com/guide/interdomain
 
 ## 统计方法与独立核验
 
@@ -68,7 +72,7 @@ Electron 桥接依据官方文档：https://www.electronjs.org/docs/latest/tutor
 - Grubbs 双侧临界值：https://www.itl.nist.gov/div898/handbook/eda/section3/eda35h1.htm
 - 独立分量合成：https://www.nist.gov/pml/nist-technical-note-1297/nist-tn-1297-5-combined-standard-uncertainty
 
-当前统计核心运行在 TypeScript 中，可同时用于浏览器和桌面离线预览。SciPy / SymPy 常驻进程负责拟合与传播；浏览器开发/预览服务器和桌面 IPC 均连接同一计算核心。验证脚本 `tests/generate-statistics-reference.py` 使用独立 SciPy 生成 `tests/statistics-reference.json`：32 组 Grubbs 临界值和 4 组统计参考样本。常规测试直接使用已保存的参考文件，不需要 Python。重新生成参考文件时可安装 SciPy 并运行该脚本。
+当前统计核心运行在 TypeScript 中，可同时用于浏览器和桌面离线预览。SciPy / SymPy 常驻进程负责拟合与传播；浏览器开发/预览服务器和 pywebview 桌面桥接均使用同一计算核心。验证脚本 `tests/generate-statistics-reference.py` 使用独立 SciPy 生成 `tests/statistics-reference.json`：32 组 Grubbs 临界值和 4 组统计参考样本。常规测试直接使用已保存的参考文件，不需要 Python。重新生成参考文件时可安装 SciPy 并运行该脚本。
 
 横向表格按变量分行、测量次数分列，横向粘贴按视觉方向映射回原始观测，方向设置随数据组保存。统计页的数据表只读，保留排除标识，可横纵切换。
 
@@ -99,10 +103,23 @@ Grubbs 表文件为 `src/grubbs-table.json`，离线预生成到小数点后 10 
 不再显示操作记录、已删除项目或使用指南。载入本机工作区时清除旧操作历史及已删除项目缓存；导入旧项目时保留当前数据与排除状态，丢弃历史记录。
 
 
-## 构建便携包
+## 构建与验证 pywebview 便携包
 
-在 Windows x64 上安装 Node.js、Python 3.14，运行 `npm ci`、`npm run setup:compute`、`npm run package:windows`。脚本下载并校验官方 Python 嵌入式运行时，将构建结果和依赖打包到 `release/`，生成 ZIP 及 SHA-256 文件。已有同名输出时会停止，避免覆盖旧发布包。发布目录与用户数据不提交到 Git。
+安装上述环境后运行 `npm run package:windows`，输出 `release/PhysicalLab-WebView-0.2.0-win-x64.zip` 及 SHA-256 校验文件。使用 PyInstaller onedir 打包，计算工作进程通过 multiprocessing 管道通信；30 秒超时终止工作进程，下次请求可重启。文件保存采用临时文件原子替换；桌面 API 仅允许当前本地应用页面调用。
 
-运行 `node tests/packaged.mjs` 检查便携包：测试隐藏窗口、使用独立数据目录、从 PATH 移除 Node.js/Python 并提供无效外部 Python 路径，验证内置计算、拟合与项目文件保存/导入。
+```sh
+npm run build
+npm test
+npm run test:ui
+npm run test:desktop
+.venv-webview\Scripts\python.exe tests/test_webview_backend.py
+.venv-webview\Scripts\python.exe tests/test_compute.py
+.venv-webview\Scripts\python.exe tests/webview_integration.py release/PhysicalLab-WebView-0.2.0-win-x64/PhysicalLab.exe
+```
 
-项目保留仓库原有 CC0 许可证；随包第三方组件的许可证分别位于对应目录。
+桌面测试使用隐藏窗口和隔离数据目录，验证中英文错误、拟合、传播、文件打开/保存，以及新进程中的自动恢复。便携版测试会从 PATH 移除 Python 和 Node.js。开发服务器忽略 Python 环境、打包目录和 WebView 缓存，避免监听锁定文件。
+
+
+Grubbs 表文件为 `src/grubbs-table.json`，预生成后直接查表，仅提供 0.01 与 0.05。合成标准不确定度数据组独立保存模型。操作记录、已删除项目与使用指南不再显示或保存。
+
+项目保留仓库原有 CC0 许可证，第三方组件许可证随便携包提供。

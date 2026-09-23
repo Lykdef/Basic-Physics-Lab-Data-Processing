@@ -1,7 +1,9 @@
 """Offline numerical engine. JSON-lines on stdin/stdout; no expression eval."""
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / '.python-deps'))
+import importlib.util
+if importlib.util.find_spec('numpy') is None:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / '.python-deps'))
 import ast
 import json
 import math

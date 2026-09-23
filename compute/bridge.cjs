@@ -7,8 +7,8 @@ const pending=new Map();
 function stop(message='计算进程已停止') {const process=child;child=null;process?.kill();for(const p of pending.values()){clearTimeout(p.timer);p.reject(new Error(message));}pending.clear();}
 function start(){
   if(child)return;
-  const bundledPython=path.join(__dirname,'../runtime/python/python.exe');
-  const executable=fs.existsSync(bundledPython)?bundledPython:(global.process.env.PHYSICAL_LAB_PYTHON || 'python');
+  const desktopPython=path.join(__dirname,'../.venv-webview',global.process.platform==='win32'?'Scripts/python.exe':'bin/python');
+  const executable=global.process.env.PHYSICAL_LAB_PYTHON || (fs.existsSync(desktopPython)?desktopPython:'python');
   const process=spawn(executable,['-u',path.join(__dirname,'core.py')],{windowsHide:true,stdio:['pipe','pipe','pipe'],env:{...global.process.env,PYTHONIOENCODING:'utf-8'}});child=process;
   let errors='';process.stderr.on('data',b=>{errors=(errors+b.toString()).slice(-2000);});
   process.on('error',()=>{if(child===process)stop('无法启动 Python，请按使用说明安装计算依赖');});

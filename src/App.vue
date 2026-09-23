@@ -25,10 +25,10 @@ const toast = ref(''); let toastTimer: ReturnType<typeof setTimeout>;
 const notice = (message: string) => { toast.value = message; clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.value = '', 4500); };
 const recovery = ref('');
 try {
-  const saved = localStorage.getItem(STORAGE);
+  const saved = window.labInitialWorkspace!==undefined ? window.labInitialWorkspace : localStorage.getItem(STORAGE);
   if (saved) { const state = JSON.parse(saved); if (!Array.isArray(state.projects)) throw new Error(); projects.value = state.projects.map((p: unknown) => parseProject(JSON.stringify(p))); activeProject.value = state.activeProject; activeDataset.value = state.activeDataset; }
 } catch { recovery.value = '恢复失败，请导入备份'; }
-watch([projects, activeProject, activeDataset], () => { try { localStorage.setItem(STORAGE, JSON.stringify({ projects: projects.value, activeProject: activeProject.value, activeDataset: activeDataset.value })); recovery.value = ''; } catch { recovery.value = '本机存储已满，请导出项目'; } }, { deep: true, immediate:true });
+watch([projects, activeProject, activeDataset], () => { try { const content=JSON.stringify({ projects: projects.value, activeProject: activeProject.value, activeDataset: activeDataset.value });if(window.labDesktop?.saveWorkspace){void window.labDesktop.saveWorkspace(content).then(()=>recovery.value='').catch(()=>recovery.value='本机保存失败，请导出项目');}else{localStorage.setItem(STORAGE,content);recovery.value='';} } catch { recovery.value = '本机存储已满，请导出项目'; } }, { deep: true, immediate:true });
 const undoStack = ref<string[]>([]); const redoStack = ref<string[]>([]);
 function edit(action: () => void) { undoStack.value.push(serialize(project.value)); if (undoStack.value.length > 80) undoStack.value.shift(); redoStack.value = []; action(); project.value.project.modified_at = new Date().toISOString(); }
 function replaceProject(raw: string) { const next = parseProject(raw); const i = projects.value.findIndex(p => p.project.id === project.value.project.id); projects.value[i] = next; selectedColumn.value = Math.min(selectedColumn.value, dataset.value.columns.length - 1); }
