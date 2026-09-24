@@ -13,16 +13,20 @@ output=root/f'release/PhysicalLab-WebView-{version}-win-x64'
 if output.exists():
     raise SystemExit(f'输出目录已存在，未覆盖：{output}')
 subprocess.run([sys.executable,'-m','PyInstaller','--noconfirm','--clean','--windowed','--onedir','--name','PhysicalLab',
-               '--paths',str(root),'--distpath',str(root/'.webview-build/dist'),'--workpath',str(root/'.webview-build/work'),
+               '--paths',str(root),'--paths',str(root/'compute'),
+               '--hidden-import','pymatrix','--hidden-import','pyleastsq','--hidden-import','pysymbolic','--distpath',str(root/'.webview-build/dist'),'--workpath',str(root/'.webview-build/work'),
                '--specpath',str(root/'.webview-build'),'--add-data',f'{root / "dist"};dist',
-               '--exclude-module','matplotlib','--exclude-module','IPython','--exclude-module','pytest',
+               '--exclude-module','numpy','--exclude-module','scipy','--exclude-module','sympy','--exclude-module','mpmath','--exclude-module','matplotlib','--exclude-module','IPython','--exclude-module','pytest',
                str(root/'desktop/main.py')],cwd=root,check=True)
 shutil.copytree(root/'.webview-build/dist/PhysicalLab',output)
 shutil.copy2(root/'LICENSE',output/'LICENSE')
 (output/'使用说明.txt').write_text('物理实验室 pywebview 版\n\n完整解压后双击 PhysicalLab.exe。\n无需安装 Python 或 Node.js。\nWindows 需已安装 Microsoft Edge WebView2 Runtime（多数 Windows 10/11 已具备）。\n项目自动保存在 %LOCALAPPDATA%\\PhysicalLab\\workspace.json。\n其他版本项目可先导出 JSON，再在本版导入。\n',encoding='utf-8')
 licenses=output/'THIRD-PARTY-LICENSES'
-for package in ['pywebview','pythonnet','clr_loader','numpy','scipy','sympy','mpmath','bottle','proxy_tools','cffi']:
-    dist=importlib.metadata.distribution(package)
+for package in ['pywebview','pythonnet','clr_loader','bottle','proxy_tools','cffi']:
+    try:
+        dist=importlib.metadata.distribution(package)
+    except importlib.metadata.PackageNotFoundError:
+        continue
     for file in dist.files or []:
         if any(part.lower().startswith(('license','copying','copyright','notice')) for part in file.parts):
             source=Path(dist.locate_file(file))

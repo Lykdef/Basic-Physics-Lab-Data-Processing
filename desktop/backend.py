@@ -1,3 +1,4 @@
+import base64
 import json
 import multiprocessing as mp
 import os
@@ -88,7 +89,8 @@ def atomic_write(path, content):
     path = Path(path)
     temporary = path.with_name(path.name + '.' + uuid.uuid4().hex + '.tmp')
     try:
-        with temporary.open('w', encoding='utf-8', newline='') as stream:
+        options = {} if isinstance(content, bytes) else {'encoding': 'utf-8', 'newline': ''}
+        with temporary.open('wb' if isinstance(content, bytes) else 'w', **options) as stream:
             stream.write(content)
             stream.flush()
             os.fsync(stream.fileno())
@@ -157,4 +159,20 @@ class Api:
             return False
         file = files if isinstance(files, str) else files[0]
         atomic_write(file, content)
+        return True
+
+    def save_image(self, name, content):
+        import webview
+        self._check()
+        if not isinstance(content, str) or len(content) > 20_000_000:
+            raise ValueError('图像超过大小限制')
+        image = base64.b64decode(content, validate=True)
+        if not image.startswith(b'\x89PNG\r\n\x1a\n'):
+            raise ValueError('无效的 PNG 图像')
+        filename = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', str(name))[:80].strip('. ') or '数据预览'
+        files = self._window.create_file_dialog(webview.FileDialog.SAVE, save_filename=filename+'.png', file_types=('PNG 图像 (*.png)',))
+        if not files:
+            return False
+        file = Path(files if isinstance(files, str) else files[0])
+        atomic_write(file, image)
         return True

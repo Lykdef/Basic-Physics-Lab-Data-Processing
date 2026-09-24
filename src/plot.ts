@@ -1,14 +1,17 @@
+import {derivedDataset} from './derived';
 import { evaluateStatistics } from './statistics';
 import { niceScale, niceStep } from './scale';
 import type { Dataset } from './model';
 
 export function resolvePlotAxes(dataset:Dataset, selectedColumn=0) {
+  dataset=derivedDataset(dataset).dataset;
   const defaults={x:dataset.kind==='paired' && dataset.columns.length>1 ? dataset.columns[0]!.id : 'sequence',y:dataset.columns[dataset.kind==='paired' && dataset.columns.length>1 ? 1 : selectedColumn]?.id ?? dataset.columns[0]!.id};
   const saved=dataset.plot_axes;
   return {x:dataset.kind==='repeated' ? 'sequence' : saved && (saved.x==='sequence' || dataset.columns.some(c=>c.id===saved.x)) ? saved.x : defaults.x,
     y:saved && dataset.columns.some(c=>c.id===saved.y) ? saved.y : defaults.y};
 }
 export function buildPlot(dataset: Dataset, selectedColumn: number, curve: number[][] = []) {
+  dataset=derivedDataset(dataset).dataset;
   if(dataset.kind==='repeated')curve=[];
   const axes=resolvePlotAxes(dataset,selectedColumn);
   const paired=axes.x!=='sequence';

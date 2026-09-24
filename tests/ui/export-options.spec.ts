@@ -1,0 +1,23 @@
+import {test,expect} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
+test('上下标显示持久化，导出标题、源数据、公式及 R²',async({page})=>{
+  await page.goto('/');
+  await page.getByRole('button',{name:'编辑变量 直径',exact:true}).click();
+  await page.getByLabel('显示符号（可选）',{exact:true}).fill('d_{max}^{2}');
+  await expect(page.locator('.modal .math-label sub')).toHaveText('max');
+  await page.getByRole('button',{name:'确认',exact:true}).click();
+  await expect(page.locator('.measure-table sup')).toHaveText('2');
+  await page.reload();await expect(page.locator('.measure-table sub')).toHaveText('max');
+  await page.locator('.dataset-tabs').getByRole('button',{name:'伏安法测电阻'}).click();
+  await page.getByRole('button',{name:'数据预览',exact:true}).click();
+  await page.getByRole('checkbox',{name:'曲线拟合',exact:true}).check();
+  await expect(page.locator('.fit-metrics')).toContainText('拟合结果',{timeout:30000});
+  await page.locator('.export-options summary').click();
+  await page.getByLabel('图像标题',{exact:true}).fill('伏安法测电阻');
+  for(const name of ['横向源数据表格','拟合公式','R²'])await page.getByRole('checkbox',{name,exact:true}).check();
+  const pending=page.waitForEvent('download');
+  await page.getByRole('button',{name:'导出图像',exact:true}).click();
+  const download=await pending;await download.saveAs('artifacts/export-options.png');
+  const bytes=await readFile((await download.path())!);
+  expect(bytes.readUInt32BE(16)).toBe(2280);expect(bytes.readUInt32BE(20)).toBeGreaterThan(888);
+});

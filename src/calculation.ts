@@ -1,3 +1,4 @@
+import {derivedDataset} from './derived';
 import { onUnmounted, reactive, watch, type Ref } from 'vue';
 import type { Project, Dataset } from './model';
 import { resolvePlotAxes } from './plot';
@@ -9,7 +10,11 @@ export async function calculate<T>(payload:unknown):Promise<T>{
 }
 export function fitRequest(d:Dataset){
   if(d.kind!=='paired' || !d.fit?.enabled)return null;
-  const config={...d.fit,weighting:'ordinary',sigmaColumn:'',rangeMin:null,rangeMax:null,parameters:d.fit.parameters.map(p=>({...p,min:null,max:null}))};
+  const transformed=derivedDataset(d);
+  const chosen=d.plot_axes;
+  if(transformed.errors.length)throw new Error(transformed.errors.join('；'));
+  d=transformed.dataset;
+  const config={...d.fit!,weighting:'ordinary',sigmaColumn:'',rangeMin:null,rangeMax:null,parameters:d.fit!.parameters.map(p=>({...p,min:null,max:null}))};
   const axes=resolvePlotAxes(d),xi=d.columns.findIndex(c=>c.id===axes.x),yi=d.columns.findIndex(c=>c.id===axes.y);
   const points=d.rows.flatMap((r,i)=>{
     const x=axes.x==='sequence'?i+1:r.values[xi],y=r.values[yi];

@@ -1,6 +1,6 @@
 {
-  "name": "physical-lab",
-  "version": "0.2.0",
+  "name": "physical-lab-pure",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,8 +11,8 @@
     "test": "tsx --test tests/*.test.ts",
     "test:ui": "playwright test",
     "test:desktop": "node scripts/webview.mjs test",
-    "setup:compute": "python -m pip install --target .python-deps -r compute/requirements.txt",
-    "package:windows": "npm run build && node scripts/webview.mjs package"
+    "package:windows": "npm run build && node scripts/webview.mjs package",
+    "test:compute": "python -S tests/test_compute.py && python -S tests/parity_engine.py"
   },
   "dependencies": {
     "jstat": "^1.9.6",

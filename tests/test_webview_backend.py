@@ -1,4 +1,5 @@
 import sys
+import base64
 import tempfile
 import unittest
 from pathlib import Path
@@ -43,6 +44,20 @@ class BackendTests(unittest.TestCase):
         request['expression']='x+1';self.assertEqual(c.calculate(request)['value'],1)
         c.shutdown()
         with self.assertRaises(RuntimeError):c.calculate(request)
+
+    def test_image_save_cancel_and_validation(self):
+        image = b'\x89PNG\r\n\x1a\n' + b'test'
+        content = base64.b64encode(image).decode('ascii')
+        self.assertFalse(self.api.save_image('图像', content))
+        file = Path(self.temp.name) / '图像.png'
+        self.window.result = (str(file),)
+        self.assertTrue(self.api.save_image('图像', content))
+        self.assertEqual(file.read_bytes(), image)
+        with self.assertRaises(ValueError):self.api.save_image('图像', 'invalid')
+        with self.assertRaises(ValueError):self.api.save_image('图像', base64.b64encode(b'other').decode())
+        self.assertEqual(file.read_bytes(), image)
+        self.window.url = 'https://example.org/'
+        with self.assertRaises(PermissionError):self.api.save_image('图像', content)
 
 
 if __name__=='__main__':unittest.main()

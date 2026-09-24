@@ -41,6 +41,7 @@ test('删除数据组、撤销和横轴显示', async ({page}) => {
 test('误差限与四种分布实时换算，变量之间独立', async ({page}) => {
   await page.goto('/');
   await page.locator('.dataset-tabs').getByRole('button',{name:'伏安法测电阻'}).click();
+  await page.locator('.inspector select').first().selectOption('repeated');
   const delta=page.getByLabel('误差限 δ',{exact:false});
   await delta.fill('6');await delta.press('Tab');
   const output=page.getByLabel('B 类标准不确定度',{exact:true});
@@ -125,7 +126,7 @@ test('连续测量序号与修约选项保存',async({page})=>{
   await expect(page.locator('.measure-table tbody .index-col')).toHaveText(Array.from({length:10},(_,i)=>String(i+1)));
   await page.locator('.dataset-tabs').getByRole('button',{name:'伏安法测电阻'}).click();
   await page.getByRole('button',{name:'数据预览',exact:true}).click();
-  await page.getByLabel('自变量 · 横轴',{exact:true}).selectOption('sequence');
+  await page.getByLabel('自变量 · 横轴',{exact:true}).fill('sequence');await page.getByLabel('自变量 · 横轴',{exact:true}).press('Tab');
   await expect(page.locator('.x-tick text')).toHaveText(Array.from({length:10},(_,i)=>String(i+1)));
   await page.locator('.dataset-tabs').getByRole('button',{name:'长度的重复测量'}).click();
   await page.getByRole('button',{name:'数据表格',exact:true}).click();
@@ -160,11 +161,11 @@ test('列出全部变量、切换和编辑，以及坐标轴保存恢复',async(
   await expect(page.getByRole('button',{name:'选择变量 电流',exact:true})).toHaveAttribute('aria-pressed','true');
   await page.getByRole('button',{name:'编辑变量 电流',exact:true}).click();await expect(page.getByLabel('名称',{exact:true})).toHaveValue('电流');await page.getByRole('button',{name:'取消',exact:true}).click();
   await page.getByRole('button',{name:'数据预览',exact:true}).click();
-  await page.getByLabel('自变量 · 横轴',{exact:true}).selectOption({label:'电流 · I / mA'});
-  await page.getByLabel('因变量 · 纵轴',{exact:true}).selectOption({label:'电压 · U / V'});
-  await expect(page.locator('.x-axis-label')).toHaveText('电流 / mA');await expect(page.locator('.plot-label')).toContainText('电压 / V');
+  await page.getByLabel('自变量 · 横轴',{exact:true}).fill('I');await page.getByLabel('自变量 · 横轴',{exact:true}).press('Tab');await page.getByLabel('横轴单位',{exact:true}).fill('mA');await page.getByLabel('横轴单位',{exact:true}).press('Tab');
+  await page.getByLabel('因变量 · 纵轴',{exact:true}).fill('U');await page.getByLabel('因变量 · 纵轴',{exact:true}).press('Tab');await page.getByLabel('纵轴单位',{exact:true}).fill('V');await page.getByLabel('纵轴单位',{exact:true}).press('Tab');
+  await expect(page.locator('.x-axis-label')).toHaveText('I / mA');await expect(page.locator('.plot-label')).toContainText('U / V');
   await page.screenshot({path:'artifacts/axis-selection.png',fullPage:true});
   await page.reload();await page.getByRole('button',{name:'数据预览',exact:true}).click();
-  await expect(page.locator('.x-axis-label')).toHaveText('电流 / mA');
-  await page.getByLabel('自变量 · 横轴',{exact:true}).selectOption('sequence');await expect(page.locator('.x-axis-label')).toHaveText('测量序号');
+  await expect(page.locator('.x-axis-label')).toHaveText('I / mA');
+  await page.getByLabel('自变量 · 横轴',{exact:true}).fill('sequence');await page.getByLabel('自变量 · 横轴',{exact:true}).press('Tab');await expect(page.locator('.x-axis-label')).toHaveText('测量序号');
 });

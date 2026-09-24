@@ -1,0 +1,27 @@
+import {test,expect} from '@playwright/test';
+import {starterProject} from '../../src/model';
+test('倒数导出量拟合、科学计算结论及持久化',async({page})=>{
+  const project=starterProject(),d=project.datasets[1]!;
+  d.columns[0]!.symbol='u';d.columns[1]!.symbol='v';
+  d.rows=d.rows.slice(0,4);[15,20,30,40].forEach((u,i)=>d.rows[i]!.values=[u,1/(.1-1/u)]);
+  await page.goto('/');await page.evaluate(p=>localStorage.setItem('physical-lab.workspace.v1',JSON.stringify({projects:[p],activeProject:p.project.id,activeDataset:p.datasets[1]!.id})),project);await page.reload();
+  await expect(page.getByText('仪器信息',{exact:true})).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'添加导出量',exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'数据预览',exact:true}).click();
+  await page.getByLabel('自变量 · 横轴').fill('1/u');await page.getByLabel('自变量 · 横轴').press('Tab');
+  await page.getByLabel('因变量 · 纵轴').fill('1/v');await page.getByLabel('因变量 · 纵轴').press('Tab');
+  await page.getByLabel('横轴单位',{exact:true}).fill('cm^{-1}');await page.getByLabel('横轴单位',{exact:true}).press('Tab');
+  await page.getByLabel('纵轴单位',{exact:true}).fill('cm^{-1}');await page.getByLabel('纵轴单位',{exact:true}).press('Tab');
+  await expect(page.locator('.x-axis-label tspan[baseline-shift="super"]')).toHaveText('-1');
+  await page.getByRole('checkbox',{name:'曲线拟合',exact:true}).check();
+  await expect(page.locator('.fit-metrics')).toContainText('拟合结果');
+  await expect.poll(async()=>Number(await page.getByLabel('参数 a 值',{exact:true}).inputValue())).toBeCloseTo(-1,6);
+  await page.getByRole('button',{name:'科学计算',exact:true}).click();
+  await expect(page.getByLabel('变量 1 标准不确定度')).toHaveCount(0);
+  const source=page.getByLabel('变量 1 来源');const option=await source.locator('option').filter({hasText:'拟合参数 b'}).getAttribute('value');await source.selectOption(option!);
+  await page.getByLabel('传播公式').fill('1/x');await expect(page.getByLabel('科学计算结果')).toHaveText('10');
+  await expect(page.getByRole('table',{name:'不确定度预算'})).toHaveCount(0);
+  await page.reload();await page.getByRole('button',{name:'科学计算',exact:true}).click();await expect(page.getByLabel('科学计算结果')).toHaveText('10');
+  await page.locator('.dataset-tabs').getByRole('button',{name:'长度的重复测量'}).click();
+  await expect(page.getByLabel('变量 1 标准不确定度')).toBeVisible();
+});

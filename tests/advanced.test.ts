@@ -13,8 +13,8 @@ test('传播绑定完整均值不确定度，并拒绝缺失来源',()=>{
  assert.throws(()=>propagationRequest(c,p,{}),/B 类/);d.instrument.b_sources[d.columns[0]!.id]={delta:.02,distribution:'uniform'};
  assert.ok(propagationRequest(c,p,{}).variables[0]!.uncertainty>0);p.datasets.shift();assert.throws(()=>propagationRequest(c,p,{}),/已删除/);
 });
-test('同一拟合参数协方差自动进入传播相关矩阵',()=>{
+test('拟合参数仅使用数值，不引入协方差',()=>{
  const p=starterProject(),d=p.datasets[1]!;d.fit=defaultFit();d.fit.enabled=true;const c=defaultPropagation();c.variables=[{id:'a',symbol:'a',source:`fit:${d.id}:0`,value:0,uncertainty:0},{id:'b',symbol:'b',source:`fit:${d.id}:1`,value:0,uncertainty:0}];
  const states:any={[d.id]:{pending:false,result:{parameters:[2,1],standard_errors:[.2,.1],covariance:[[.04,-.01],[-.01,.01]]}}};
- assert.ok(Math.abs(propagationRequest(c,p,states).correlation[0]![1]!+.5)<1e-12);states[d.id].pending=true;assert.throws(()=>propagationRequest(c,p,states),/等待拟合/);
+ assert.equal(propagationRequest(c,p,states).correlation[0]![1],0);assert.equal(propagationRequest(c,p,states).variables[0]!.uncertainty,0);states[d.id].pending=true;assert.throws(()=>propagationRequest(c,p,states),/等待拟合/);
 });

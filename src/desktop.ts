@@ -6,7 +6,7 @@ export async function initializeDesktop(){
   });
   const api=window.pywebview!.api;
   let queue=Promise.resolve();
-  window.labDesktop={calculate:payload=>api.calculate(payload),openProject:()=>api.open_project(),saveProject:(name,content)=>api.save_project(name,content),
+  window.labDesktop={saveImage:(name,content)=>api.save_image(name,content),calculate:payload=>api.calculate(payload),openProject:()=>api.open_project(),saveProject:(name,content)=>api.save_project(name,content),
     saveWorkspace:content=>{const job=queue.catch(()=>{}).then(()=>api.save_workspace(content)).then(()=>{});queue=job;return job;}};
   window.labInitialWorkspace=await api.load_workspace();
 }

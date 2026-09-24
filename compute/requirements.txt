@@ -1,3 +1,3 @@
-numpy==2.5.3
-scipy==1.18.1
-sympy==1.14.0
+# 纯 Python 复刻版 v1.0.0：计算引擎零第三方依赖。
+# 原 numpy/scipy/sympy 分别由 compute/pymatrix.py、compute/pyleastsq.py、
+# compute/pysymbolic.py（均为纯标准库实现）替代。
